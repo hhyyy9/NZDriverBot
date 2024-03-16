@@ -1,0 +1,21 @@
+﻿<Window x:Class="NZDriverBot.AboutDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:NZDriverBot"
+        mc:Ignorable="d"
+        Title="About" Height="150" Width="300">
+
+    <Grid>
+        <StackPanel VerticalAlignment="Center">
+            <TextBlock Text="{Binding BuildInfo}" FontSize="9" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+            <TextBlock Text="Author: Yu Huang" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,10,0,0"/>
+            <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,10,0,0">
+                <Hyperlink NavigateUri="mailto:yu2@me.om" FontSize="9">E-mail: yu2@me.om</Hyperlink>
+            </TextBlock>
+            <TextBlock Text="{Binding BuildTime}" FontSize="9" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,10,0,0"/>
+        </StackPanel>
+        
+    </Grid>
+</Window>

@@ -40,8 +40,16 @@ namespace NZDriverBot
 
         private void MainWindow_Closed(object sender, EventArgs e)
         {
-            driver.Quit();
             driver.Close();
+            driver.Quit();
+        }
+
+        private void MenuItem_About_Click(object sender, RoutedEventArgs e)
+        {
+            AboutDialog aboutDialog = new AboutDialog();
+            aboutDialog.Owner = this;
+            aboutDialog.WindowStartupLocation = WindowStartupLocation.CenterOwner;
+            aboutDialog.ShowDialog();
         }
 
         private void Setup()

@@ -47,6 +47,11 @@
                 <ProgressBar IsIndeterminate="True" Width="100" Height="20" Margin="0,10,0,0"/>
             </StackPanel>
         </Border>
+
+        <Menu Panel.ZIndex="1" Height="20" VerticalAlignment="Top">
+            <MenuItem Header="About" Click="MenuItem_About_Click"/>
+        </Menu>
+
     </Grid>
 
 </Window>
