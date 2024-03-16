@@ -6,10 +6,9 @@ using System.Threading.Tasks;
 
 namespace NZDriverBot.Models
 {
-    public class SlotAvailability
+    public class Reserve
     {
-        public DateTime slotDate { get; set; }
-        public string siteId { get; set; }
-        public int day { get; set; }
+        public string bookingId { get; set; }
+        public bool isPaymentRequired { get; set; }
     }
 }

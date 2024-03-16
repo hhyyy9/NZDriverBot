@@ -8,6 +8,8 @@ using OpenQA.Selenium.Support.UI;
 using SeleniumExtras.WaitHelpers;
 using System.IO;
 using System.Net.Http;
+using System.Text;
+using System.Text.Json.Nodes;
 using System.Windows;
 using System.Windows.Controls;
 using WebDriverManager;
@@ -25,7 +27,9 @@ namespace NZDriverBot
         private List<Site> sites = new();
         private string selectedSiteId = string.Empty;
         private List<Booking> bookings = new();
-
+        private List<OverseasConversion> outstandingTests = new();
+        private Reserve reserve = new();
+        private DateTime selectedDate;
 
         private IWebDriver driver;
 
@@ -75,8 +79,6 @@ namespace NZDriverBot
             new DriverManager().SetUpDriver(new ChromeConfig());
 
             driver = new ChromeDriver(service, options);
-            driver.Url = "https://online.nzta.govt.nz/licence-test/identification";
-            Console.WriteLine("God is running for " + driver.Title);
         }
 
 
@@ -186,7 +188,7 @@ namespace NZDriverBot
                 outputMessage += siteErrorContent;
             }
 
-            if (bookingDatePicker.Equals(string.Empty))
+            if (bookingFromDatePicker.Equals(string.Empty) || bookingToDatePicker.Equals(string.Empty))
             {
                 outputMessage += bookingDatePickerErrorContent;
             }
@@ -206,108 +208,139 @@ namespace NZDriverBot
             LoadingOverlay.Visibility = System.Windows.Visibility.Collapsed;
         }
 
-        private async void Login()
+        private async Task Login()
         {
-            
-            WebDriverWait wait = new WebDriverWait(driver, TimeSpan.FromSeconds(30));
-            wait.Until(ExpectedConditions.ElementIsVisible(By.XPath("//h1[normalize-space()='Book a practical driver licence test']")));
-            wait.Until(drv => drv.FindElement(By.XPath("//input[@placeholder='e.g. AB123456']"))).SendKeys(licenseNumberTxt.Text);
-            wait.Until(drv => drv.FindElement(By.XPath("//input[@placeholder='e.g. 470']"))).SendKeys(licenseVersionTxt.Text);
-            wait.Until(drv => drv.FindElement(By.XPath("//input[@placeholder='e.g. Smith']"))).SendKeys(nameTxt.Text);
-            wait.Until(drv => drv.FindElement(By.XPath("//input[@placeholder='e.g. 24-03-1981']"))).SendKeys(birthDatePicker.SelectedDate!.Value.ToString("dd-MM-yyyy"));
-            var button = wait.Until(ExpectedConditions.ElementToBeClickable(By.XPath("//button[@id='btnContinue']")));
-            if (button.Displayed)
-                button.Click();
-            Thread.Sleep(5000);
-
-            //IWebElement payElement = wait.Until(ExpectedConditions.ElementExists(By.XPath("//dt[normalize-space()='Fees payable:']")));
-
-            var errorElement = wait.Until<IWebElement>(d =>
-            {
-                var element = d.FindElement(By.XPath("//span[normalize-space()='contact us.']"));
-                if (element != null)
-                    return element;
-                else
-                    return null;
-            });
-
-            if (errorElement.Displayed)
-            {
-                MessageBox.Show("Error: " + "It looks like you've entered the wrong details.Please check the information you've entered in each of the fields and try again.");
-                return;
-            }
-
-            var nextButton = wait.Until<IWebElement>(d =>
-            {
-                var rButton = d.FindElement(By.XPath("//button[@id='btnContinue']")).Text.Contains("Reschedule");
-                var bButton = d.FindElement(By.XPath("//button[@id='btnContinue']")).Text.Contains("Book");
-                if (rButton || bButton)
-                    //return ExpectedConditions.ElementToBeClickable(By.XPath("//button[@id='btnContinue']"));
-                    return d.FindElement(By.XPath("//button[@id='btnContinue']"));
-                else
-                    return null;
-            });
-            if (nextButton != null)
-                nextButton.Click();
-            else
-            {
-                MessageBox.Show("Internal Error! Please report to yu2@me.com");
-                return;
-            }
-
-            List<Slot> availableSlots = new();
             Task loadingTask = Task.Run(() =>
             {
                 Dispatcher.Invoke(() =>
                 {
-                    //loadingWindow.Owner = this;
-                    //loadingWindow.WindowStartupLocation = WindowStartupLocation.CenterOwner;
-                    //loadingWindow.ShowDialog();
-                    // 显示加载状态
                     LoadingOverlay.Visibility = System.Windows.Visibility.Visible;
                 });
             });
 
-            await Task.Delay(100); // 等待一段时间确保 loadingWindow 已经显示
-
-            await GetAuthenticationAsync();
-            await GetEligibilityAsync();
-            var bookInfo = await GetBookingsAsync();
-            await GetDLBookingAsync();
-            await GetOverseasConversionAsync();
-            await GetNewLicenceClassAsync();
-
-            
-            do
-            {
-                availableSlots = await GetSiteListAsync(bookingDatePicker.SelectedDate!.Value.ToString("dd/MM/yyyy"));
-
-                // 如果没有可用的时间槽，等待一分钟后继续尝试
-                if (availableSlots!.Count <= 0)
+            //await Task.Run(async () =>
+            //{
+                try
                 {
-                    await Task.Delay(TimeSpan.FromSeconds(10));
+                    Dispatcher.Invoke(() => {
+                        driver.Url = "https://online.nzta.govt.nz/licence-test/identification";
+                        //driver.Navigate().GoToUrl("https://online.nzta.govt.nz/licence-test/identification");
+                        Console.WriteLine("God is running for " + driver.Title);
+
+                        WebDriverWait wait = new WebDriverWait(driver, TimeSpan.FromSeconds(30));
+                        wait.Until(ExpectedConditions.ElementIsVisible(By.XPath("//h1[normalize-space()='Book a practical driver licence test']")));
+                        wait.Until(drv => drv.FindElement(By.XPath("//input[@placeholder='e.g. AB123456']"))).SendKeys(licenseNumberTxt.Text);
+                        wait.Until(drv => drv.FindElement(By.XPath("//input[@placeholder='e.g. 470']"))).SendKeys(licenseVersionTxt.Text);
+                        wait.Until(drv => drv.FindElement(By.XPath("//input[@placeholder='e.g. Smith']"))).SendKeys(nameTxt.Text);
+                        wait.Until(drv => drv.FindElement(By.XPath("//input[@placeholder='e.g. 24-03-1981']"))).SendKeys(birthDatePicker.SelectedDate!.Value.ToString("dd-MM-yyyy"));
+                        var button = wait.Until(ExpectedConditions.ElementToBeClickable(By.XPath("//button[@id='btnContinue']")));
+                        if (button.Displayed)
+                            button.Click();
+                        
+                        Thread.Sleep(5000);
+
+                        IWebElement? errorElement = null;
+                        errorElement = wait.Until<IWebElement>(d =>
+                        {
+                            try
+                            {
+                                return d.FindElement(By.XPath("//div[@class='[ section layout layout--nudge layout--half ] theme--error']"));
+                            }
+                            catch (NoSuchElementException)
+                            {
+                                return null;
+                            }
+                        });
+
+                        if (errorElement != null && errorElement.Displayed)
+                        {
+                            MessageBox.Show("Error: It looks like you've entered the wrong details. Please close software and try again.");
+                            return;
+                        }
+
+
+                    });
+
+                    await Task.Delay(100);
+
+                    await GetAuthenticationAsync();
+                    await GetEligibilityAsync();
+                    var bookInfo = await GetBookingsAsync();
+                    await GetDLBookingAsync();
+                    outstandingTests = await GetOverseasConversionAsync();
+                    await GetNewLicenceClassAsync();
+
+                    List<Slot> availableSlots = new();
+                    do
+                    {
+                        var availableSitesOnDays = await CheckAvailableSiteAsync(bookingFromDatePicker.SelectedDate!.Value.ToString("dd/MM/yyyy"), bookingToDatePicker.SelectedDate!.Value.ToString("dd/MM/yyyy"));
+                        foreach (var site in availableSitesOnDays!)
+                        {
+                            await Task.Delay(TimeSpan.FromSeconds(10));
+                            selectedDate = site.slotDate;
+                            availableSlots = await GetSiteListAsync(site.siteId, selectedDate.ToString("dd/MM/yyyy"));
+
+                            foreach (var slot in availableSlots)
+                            {
+                                if (timeComboBox.SelectedIndex == 0)
+                                {
+                                    if (slot.isMorning)
+                                    {
+                                        MessageBox.Show("Congratulations! Found available slot " + slot.siteId + "in the Morning!");
+                                        BookAndConfirm();
+                                        break;
+                                    }
+                                    else { continue; }
+                                }
+                                else if (timeComboBox.SelectedIndex == 1)
+                                {
+                                    if (!slot.isMorning)
+                                    {
+                                        MessageBox.Show("Congratulations! Found available slot " + slot.siteId + "in the Afternoon!");
+                                        BookAndConfirm();
+                                        break;
+                                    }
+                                    else { continue; }
+                                }
+                            }
+                        }
+
+
+                    } while (availableSlots.Count <= 0);
                 }
-            } while (availableSlots.Count <= 0);
-
-            if (availableSlots.Count > 0)
-            {
-                MessageBox.Show("Congratulations! Found " + availableSlots.Count.ToString() + "available slots!");
-                // 在 UI 线程上关闭 loadingWindow
-                Dispatcher.Invoke(() =>
+                catch(Exception ex)
                 {
-                    //loadingWindow.Close();
-                    LoadingOverlay.Visibility = System.Windows.Visibility.Collapsed;
-                });
-            }
+                    MessageBox.Show("Error: " + ex.Message);
+                }
+                
 
-            await loadingTask; // 等待 loadingWindow 关闭
+            //});
+
+            Dispatcher.Invoke(() =>
+            {
+                LoadingOverlay.Visibility = System.Windows.Visibility.Collapsed;
+            });
+
+            await loadingTask;
+        }
+
+        private async void BookAndConfirm()
+        {
+            await PostReserveAsync();
+            var bookingDetail = await GetBookingByIdAsync();
+            await GetContactAsync();
+            var result = await PostConfirmAsync();
+            if (result != null)
+            {
+                MessageBox.Show($"Congratulations! Application {bookingDetail.id} was reserved successfully!\r\nTest type:{bookingDetail.test}\r\nSite:{bookingDetail.site}\r\nAddress:{bookingDetail.address}\r\nTest time:{bookingDetail.date.ToString("yyyy-MM-dd HH:mm:ss")}");
+            }
         }
 
         //first fetch authentication api.
         private async Task<string?> GetAuthenticationAsync()
         {
             string url = "https://online.nzta.govt.nz/api/authentication";
-            string? responseContent = await SendHttpRequestAsync(url);
+            string? responseContent = await SendHttpRequestAsync(HttpMethod.Get, url,"");
             Console.WriteLine("authentication=" + responseContent);
             return responseContent;
         }
@@ -315,7 +348,7 @@ namespace NZDriverBot
         private async Task<string?> GetEligibilityAsync()
         {
             string url = "https://online.nzta.govt.nz/api/licence-test/eligibility";
-            string? responseContent = await SendHttpRequestAsync(url);
+            string? responseContent = await SendHttpRequestAsync(HttpMethod.Get, url, "");
             Console.WriteLine("eligibility=" + responseContent);
             return responseContent;
         }
@@ -324,7 +357,7 @@ namespace NZDriverBot
         private async Task<List<Booking>> GetBookingsAsync()
         {
             string url = "https://online.nzta.govt.nz/api/licence-test/bookings";
-            string? responseContent = await SendHttpRequestAsync(url);
+            string? responseContent = await SendHttpRequestAsync(HttpMethod.Get, url, "");
             Console.WriteLine("bookings=" + responseContent);
             JObject obj = JObject.Parse(responseContent!);
             bookings = obj["bookings"].ToObject<List<Booking>>();
@@ -334,23 +367,25 @@ namespace NZDriverBot
         private async Task<string?> GetDLBookingAsync()
         {
             string url = "https://online.nzta.govt.nz/api/managedcontent/DL/DL-Booking";
-            string? responseContent = await SendHttpRequestAsync(url);
+            string? responseContent = await SendHttpRequestAsync(HttpMethod.Get, url, "");
             Console.WriteLine("DLBooking=" + responseContent);
             return responseContent;
         }
 
-        private async Task<string?> GetOverseasConversionAsync()
+        private async Task<List<OverseasConversion>?> GetOverseasConversionAsync()
         {
             string url = "https://online.nzta.govt.nz/api/licence-test/eligibility/OverseasConversion";
-            string? responseContent = await SendHttpRequestAsync(url);
+            string? responseContent = await SendHttpRequestAsync(HttpMethod.Get, url, "");
             Console.WriteLine("OverseasConversion=" + responseContent);
-            return responseContent;
+            JObject obj = JObject.Parse(responseContent!);
+            outstandingTests = obj["outstandingTests"].ToObject<List<OverseasConversion>>();
+            return outstandingTests;
         }
 
         private async Task<string?> GetNewLicenceClassAsync()
         {
             string url = "https://online.nzta.govt.nz/api/licence-test/eligibility/NewLicenceClass";
-            string? responseContent = await SendHttpRequestAsync(url);
+            string? responseContent = await SendHttpRequestAsync(HttpMethod.Get, url, "");
             Console.WriteLine("NewLicenceClass=" + responseContent);
             return responseContent;
         }
@@ -358,30 +393,90 @@ namespace NZDriverBot
         private async Task<List<SlotAvailability>?> CheckAvailableSiteAsync(string fromDate, string toDate)
         {
             string url = "https://online.nzta.govt.nz/api/licence-test/slots/availability/Class1F?siteId="+selectedSiteId+"&dateFrom="+fromDate+"&dateTo="+toDate;
-            string? responseContent = await SendHttpRequestAsync(url);
+            string? responseContent = await SendHttpRequestAsync(HttpMethod.Get, url, "");
             Console.WriteLine("AvailableSite=" + responseContent);
             JObject obj = JObject.Parse(responseContent!);
             var list = obj["slotAvailability"].ToObject<List<SlotAvailability>>();
             return list;
         }
 
-        private async Task<List<Slot>?> GetSiteListAsync(string date)
+        private async Task<List<Slot>?> GetSiteListAsync(string siteId, string date)
         {
-            string url = "https://online.nzta.govt.nz/api/licence-test/slots/Class1F/"+ selectedSiteId + "?slotDate="+date;
-            string? responseContent = await SendHttpRequestAsync(url);
+            string url = "https://online.nzta.govt.nz/api/licence-test/slots/Class1F/"+ siteId + "?slotDate="+date;
+            string? responseContent = await SendHttpRequestAsync(HttpMethod.Get, url, "");
             Console.WriteLine("SiteList=" + responseContent);
             JObject obj = JObject.Parse(responseContent!);
             var availableSlots = obj["slots"].ToObject<List<Slot>>();
             return availableSlots;
         }
 
+        private async Task<Reserve?> PostReserveAsync()
+        {
+            string url = "https://online.nzta.govt.nz/api/licence-test/bookings/reserve";
+            var bodyObject = new ReserveBody
+            {
+                applicationId = outstandingTests.FirstOrDefault().applicationId.ToString(),
+                applicationType = outstandingTests.FirstOrDefault().applicationType,
+                hasAdvancedDriverCertificate = "false",
+                isReschedule = false,
+                licenceClass = "Class1F",
+                siteId = selectedSiteId,
+                stage = outstandingTests.FirstOrDefault()?.stage ?? "",
+                testType = outstandingTests.FirstOrDefault()?.testType ?? "",
+                when = selectedDate!.ToString("dd/MM/yyyy")
+            };
+            string? responseContent = await SendHttpRequestAsync(HttpMethod.Post, url, JsonConvert.SerializeObject(bodyObject));
+            Console.WriteLine("Reserve=" + responseContent);
+            JObject obj = JObject.Parse(responseContent!);
+            reserve = obj.ToObject<Reserve>();
+            return reserve;
+        }
 
-        private async Task<string?> SendHttpRequestAsync(string url)
+        private async Task<BookingDetail?> GetBookingByIdAsync()
+        {
+            string url = "https://online.nzta.govt.nz/api/licence-test/bookings/"+ reserve.bookingId + "?$expand=$fee";
+            string? responseContent = await SendHttpRequestAsync(HttpMethod.Get, url, "");
+            Console.WriteLine("BookingById=" + responseContent);
+            JObject obj = JObject.Parse(responseContent!);
+            var bookingDetail = obj["booking"].ToObject<BookingDetail>();
+            return bookingDetail;
+        }
+
+        private async Task<Contact?> GetContactAsync()
+        {
+            string url = "https://online.nzta.govt.nz/api/driver/contact";
+            string? responseContent = await SendHttpRequestAsync(HttpMethod.Get, url, "");
+            Console.WriteLine("GetContact=" + responseContent);
+            JObject obj = JObject.Parse(responseContent!);
+            var contact = obj["driver"].ToObject<Contact>();
+            return contact;
+        }
+
+        private async Task GetPingAsync()
+        {
+            string url = "https://online.nzta.govt.nz/api/authentication/PING";
+            string? responseContent = await SendHttpRequestAsync(HttpMethod.Get, url, "");
+            Console.WriteLine("GetPing=" + responseContent);
+            return;
+        }
+
+        private async Task<string> PostConfirmAsync()
+        {
+            string url = "https://online.nzta.govt.nz/api/licence-test/bookings/reserve/"+ reserve.bookingId + "/confirm";
+            string? responseContent = await SendHttpRequestAsync(HttpMethod.Post, url, "");
+            Console.WriteLine("PostConfirm=" + responseContent);
+            JObject obj = JObject.Parse(responseContent!);
+            var result = obj["bookingId"].ToString();
+            return result;
+        }
+
+
+        private async Task<string?> SendHttpRequestAsync(HttpMethod type, string url, string requestBody)
         {
             using (HttpClient httpClient = new HttpClient())
             {
                 // 创建 HttpRequestMessage 对象
-                var request = new HttpRequestMessage(HttpMethod.Get, url);
+                var request = new HttpRequestMessage(type, url);
 
                 // 添加自定义的 header
                 request.Headers.Add("Host", "online.nzta.govt.nz");
@@ -408,8 +503,12 @@ namespace NZDriverBot
                     Console.WriteLine(cookie.Name + " : " + cookie.Value);
                     cookieString += cookie.Name + "=" + cookie.Value + ";";
                 }
-                //cookieString += "ApplicationCookie=CfDJ8GP7WLeouNFHlEgjVfPM7m5WP5WGItTe5l3MOWsLf4s-jbKd5BxTXQrQQYyFRx4ALli1h1hISM-RieetEWR2GbhJ0Gy9ZRjpcICqYK9lOvWnDS0VVMaQcXthpls2DdUl5qVchlE4be6sL3DVzxPwsdLnxiiMAExgIXg930tPSSG1Rp7FhJ7WPmW7atBpg5kLVT10cLmA4CY4UBV_gCV4tDlpbJTHx2zXZopdR7lzz0O34JT12Ir3F0G-YI4h-nDa2od7nYkAuHQRzHfOl5g0UnBuh_NJfSf3ZbOKrnNn7MKYIS12vO4uq70IJtkMJ05RAAXBfq5Gbl8-iUuyhHYLUAdmx_f1quj64mO-IvgZ-WagD_eXxdqaYMwumd876gXgUZpPhFVT43JGBGlVCh15ckAvyJQkMmpH_xZGUO4WOjlxHMkKbc3nednyW7LAhxjn0Q7fZ0C9RbAlvfVPLpKmc2juVFMPciG7d4VIAIieC1X8epNFLUx8GVSFPFuW3zhjUYmMYZ_lOdfsavR5ibwYSdwkCUdZW5IiNf7_yMw1Jb7k0yhdA7BTe5gYft0QNBnax7QWr5M6jf9tyseQCKOEdVxruNZf4wNp6Yo08A96JX0Kh3yujKGyJ3Q5-gJEde6EOGL8D_aOgalWWdMXG6H3b4s";
                 request.Headers.Add("Cookie", cookieString);
+
+                if (!string.IsNullOrEmpty(requestBody))
+                {
+                    request.Content = new StringContent(requestBody, Encoding.UTF8, "application/json");
+                }
 
                 try
                 {
