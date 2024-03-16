@@ -1,0 +1,316 @@
+ [
+    {
+      "id": "000101",
+      "name": "Northland",
+      "locations": [
+        {
+          "id": "000014",
+          "name": "Dargaville"
+        },
+        {
+          "id": "000035",
+          "name": "Kaikohe District"
+        },
+        {
+          "id": "000037",
+          "name": "Kaitaia District"
+        },
+        {
+          "id": "000039",
+          "name": "Bay of Islands"
+        },
+        {
+          "id": "000111",
+          "name": "Whangarei"
+        }
+      ]
+    },
+    {
+      "id": "000107",
+      "name": "Auckland",
+      "locations": [
+        {
+          "id": "000006",
+          "name": "Central Auckland"
+        },
+        {
+          "id": "000043",
+          "name": "South Auckland"
+        },
+        {
+          "id": "000106",
+          "name": "North Auckland"
+        },
+        {
+          "id": "000130",
+          "name": "West Auckland"
+        }
+      ]
+    },
+    {
+      "id": "000202",
+      "name": "Coromandel",
+      "locations": [
+        {
+          "id": "000093",
+          "name": "Thames"
+        }
+      ]
+    },
+    {
+      "id": "000204",
+      "name": "Waikato",
+      "locations": [
+        {
+          "id": "000010",
+          "name": "Cambridge"
+        },
+        {
+          "id": "000026",
+          "name": "Hamilton"
+        },
+        {
+          "id": "000049",
+          "name": "East Waikato"
+        },
+        {
+          "id": "000086",
+          "name": "King Country"
+        },
+        {
+          "id": "000090",
+          "name": "Te Awamutu"
+        },
+        {
+          "id": "000095",
+          "name": "Tokoroa"
+        }
+      ]
+    },
+    {
+      "id": "000211",
+      "name": "Bay of Plenty",
+      "locations": [
+        {
+          "id": "000062",
+          "name": "Opotiki"
+        },
+        {
+          "id": "000076",
+          "name": "Rotorua"
+        },
+        {
+          "id": "000087",
+          "name": "Taupo District"
+        },
+        {
+          "id": "000088",
+          "name": "Tauranga"
+        },
+        {
+          "id": "000109",
+          "name": "Whakatane"
+        }
+      ]
+    },
+    {
+      "id": "000301",
+      "name": "Gisborne",
+      "locations": [
+        {
+          "id": "000019",
+          "name": "Gisborne"
+        }
+      ]
+    },
+    {
+      "id": "000302",
+      "name": "Hawkes Bay",
+      "locations": [
+        {
+          "id": "000027",
+          "name": "Hastings"
+        },
+        {
+          "id": "000056",
+          "name": "Napier"
+        },
+        {
+          "id": "000101",
+          "name": "Central Hawkes Bay"
+        },
+        {
+          "id": "000102",
+          "name": "Wairoa"
+        }
+      ]
+    },
+    {
+      "id": "000308",
+      "name": "Taranaki",
+      "locations": [
+        {
+          "id": "000028",
+          "name": "Hawera"
+        },
+        {
+          "id": "000058",
+          "name": "New Plymouth"
+        }
+      ]
+    },
+    {
+      "id": "000312",
+      "name": "Manawatu \u0026 Wanganui",
+      "locations": [
+        {
+          "id": "000017",
+          "name": "Feilding"
+        },
+        {
+          "id": "000040",
+          "name": "Levin"
+        },
+        {
+          "id": "000067",
+          "name": "Palmerston North"
+        },
+        {
+          "id": "000105",
+          "name": "Wanganui"
+        }
+      ]
+    },
+    {
+      "id": "000317",
+      "name": "Wairarapa",
+      "locations": [
+        {
+          "id": "000046",
+          "name": "Masterton"
+        }
+      ]
+    },
+    {
+      "id": "000323",
+      "name": "Wellington",
+      "locations": [
+        {
+          "id": "000041",
+          "name": "Lower Hutt"
+        },
+        {
+          "id": "000069",
+          "name": "Kapiti Coast"
+        },
+        {
+          "id": "000071",
+          "name": "Porirua"
+        },
+        {
+          "id": "000097",
+          "name": "Upper Hutt"
+        },
+        {
+          "id": "000107",
+          "name": "Wellington"
+        }
+      ]
+    },
+    {
+      "id": "000401",
+      "name": "Nelson \u0026 Marlborough",
+      "locations": [
+        {
+          "id": "000008",
+          "name": "Marlborough"
+        },
+        {
+          "id": "000057",
+          "name": "Nelson"
+        }
+      ]
+    },
+    {
+      "id": "000404",
+      "name": "Canterbury",
+      "locations": [
+        {
+          "id": "000075",
+          "name": "Rangiora"
+        },
+        {
+          "id": "000129",
+          "name": "Christchurch"
+        }
+      ]
+    },
+    {
+      "id": "000410",
+      "name": "Mid \u0026 South Canterbury",
+      "locations": [
+        {
+          "id": "000005",
+          "name": "Ashburton"
+        },
+        {
+          "id": "000094",
+          "name": "Timaru District"
+        }
+      ]
+    },
+    {
+      "id": "000415",
+      "name": "West Coast",
+      "locations": [
+        {
+          "id": "000025",
+          "name": "Greymouth"
+        },
+        {
+          "id": "000108",
+          "name": "Westport"
+        }
+      ]
+    },
+    {
+      "id": "000419",
+      "name": "Otago",
+      "locations": [
+        {
+          "id": "000003",
+          "name": "Central Otago"
+        },
+        {
+          "id": "000007",
+          "name": "Clutha District"
+        },
+        {
+          "id": "000015",
+          "name": "Dunedin District"
+        },
+        {
+          "id": "000059",
+          "name": "North Otago"
+        },
+        {
+          "id": "000074",
+          "name": "Queenstown District"
+        }
+      ]
+    },
+    {
+      "id": "000422",
+      "name": "Southland",
+      "locations": [
+        {
+          "id": "000022",
+          "name": "Gore District"
+        },
+        {
+          "id": "000034",
+          "name": "Invercargill"
+        }
+      ]
+    }
+  ]

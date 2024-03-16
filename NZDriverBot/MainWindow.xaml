@@ -1,0 +1,52 @@
+﻿<Window x:Class="NZDriverBot.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:NZDriverBot"
+        mc:Ignorable="d"
+        Title="NZ Driver Bot" Height="600" Width="500" ResizeMode="NoResize">
+    <Grid Width="500" Height="600" Background="Beige">
+        <TextBlock x:Name="titleBlock" HorizontalAlignment="Center" Margin="0,30,0,0" TextWrapping="Wrap" Text="NZ Driver Bot" VerticalAlignment="Top" FontSize="24" FontFamily="Arial Black"/>
+        <Button x:Name="button" Content="Start" Margin="0,492,0,0" VerticalAlignment="Top" HorizontalAlignment="Center" Width="196" FontFamily="Microsoft YaHei" FontWeight="Bold" Foreground="Red" Click="button_Click" Height="33"/>
+        <Grid Margin="0,0,22,483" HorizontalAlignment="Center" Width="413" Height="32" VerticalAlignment="Bottom">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="212*"/>
+                <ColumnDefinition Width="201*"/>
+            </Grid.ColumnDefinitions>
+            <TextBox x:Name="licenseNumberTxt" HorizontalAlignment="Left" TextWrapping="Wrap" Text="" Width="295" VerticalAlignment="Center" Margin="118,0,0,0" Grid.ColumnSpan="2"/>
+            <TextBlock x:Name="licenseBlock" HorizontalAlignment="Left" TextWrapping="Wrap" Text="License Number :" VerticalAlignment="Center"/>
+        </Grid>
+        <Grid Margin="29,153,9,0" VerticalAlignment="Top">
+            <TextBox x:Name="licenseVersionTxt" HorizontalAlignment="Left" TextWrapping="Wrap" Text="" Width="295" VerticalAlignment="Center" Margin="122,0,0,0"/>
+            <TextBlock x:Name="licenseVersionBlock" HorizontalAlignment="Left" TextWrapping="Wrap" Text="Licence version :" VerticalAlignment="Center" Margin="10,0,0,0"/>
+        </Grid>
+        <Grid Margin="43,204,22,364">
+            <TextBox x:Name="nameTxt" HorizontalAlignment="Left" TextWrapping="Wrap" Text="" Width="295" VerticalAlignment="Center" Margin="107,0,0,0"/>
+            <TextBlock x:Name="nameBlock" HorizontalAlignment="Left" TextWrapping="Wrap" Text="Last Name :" VerticalAlignment="Center" Margin="21,0,0,0"/>
+        </Grid>
+        <Grid Margin="82,326,22,0" VerticalAlignment="Top">
+            <TextBlock Text="Site :" Margin="20,0,333,0" VerticalAlignment="Center"/>
+            <ComboBox x:Name="AreaComboBox" SelectionChanged="AreaComboBox_SelectionChanged"  Margin="69,0,248,0" VerticalAlignment="Center"/>
+            <ComboBox x:Name="LocationComboBox" SelectionChanged="LocationComboBox_SelectionChanged" VerticalAlignment="Center" Margin="154,0,138,0"/>
+            <ComboBox x:Name="SiteComboBox" SelectionChanged="SiteComboBox_SelectionChanged" Margin="265,0,24,0" VerticalAlignment="Center"/>
+        </Grid>
+        <Grid Margin="28,266,24,0" VerticalAlignment="Top">
+            <TextBlock x:Name="birthBlock" HorizontalAlignment="Left" TextWrapping="Wrap" Text="Date of Birth :" VerticalAlignment="Center" Margin="22,0,0,0"/>
+            <DatePicker x:Name="birthDatePicker" HorizontalAlignment="Left" Margin="122,0,0,0" VerticalAlignment="Top" Text=""/>
+        </Grid>
+        <Grid Margin="27,381,-5,0" VerticalAlignment="Top">
+            <TextBlock x:Name="bookingDateBlock" HorizontalAlignment="Left" TextWrapping="Wrap" Text="Booking Time :" VerticalAlignment="Center" Margin="22,0,0,0"/>
+            <DatePicker x:Name="bookingDatePicker" HorizontalAlignment="Left" Margin="122,0,0,0" VerticalAlignment="Top" Text=""/>
+        </Grid>
+
+        <Border x:Name="LoadingOverlay" Background="#80000000" Visibility="Collapsed">
+            <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+                <Button Content="Close" Click="CloseButton_Click" HorizontalAlignment="Right" Margin="0,0,10,10"/>
+                <TextBlock Text="Loading..." Foreground="White"/>
+                <ProgressBar IsIndeterminate="True" Width="100" Height="20" Margin="0,10,0,0"/>
+            </StackPanel>
+        </Border>
+    </Grid>
+
+</Window>
