@@ -3,7 +3,9 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.9.34622.214
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NZDriverBot", "NZDriverBot\NZDriverBot.csproj", "{931545CB-D05F-4077-99CB-88668E95B131}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "NZDriverBot", "NZDriverBot\NZDriverBot.csproj", "{931545CB-D05F-4077-99CB-88668E95B131}"
+EndProject
+Project("{54435603-DBB4-11D2-8724-00A0C9A8B90C}") = "NZDriverBot.Installer", "NZDriverBot.Installer\NZDriverBot.Installer.vdproj", "{50B1AAD9-418E-43B8-A2C2-C0EEBBBF2655}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -15,6 +17,8 @@ Global
 		{931545CB-D05F-4077-99CB-88668E95B131}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{931545CB-D05F-4077-99CB-88668E95B131}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{931545CB-D05F-4077-99CB-88668E95B131}.Release|Any CPU.Build.0 = Release|Any CPU
+		{50B1AAD9-418E-43B8-A2C2-C0EEBBBF2655}.Debug|Any CPU.ActiveCfg = Debug
+		{50B1AAD9-418E-43B8-A2C2-C0EEBBBF2655}.Release|Any CPU.ActiveCfg = Release
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

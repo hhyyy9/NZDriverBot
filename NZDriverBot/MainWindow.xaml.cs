@@ -9,7 +9,6 @@ using SeleniumExtras.WaitHelpers;
 using System.IO;
 using System.Net.Http;
 using System.Text;
-using System.Text.Json.Nodes;
 using System.Windows;
 using System.Windows.Controls;
 using WebDriverManager;
@@ -60,20 +59,24 @@ namespace NZDriverBot
         private void Setup()
         {
             ChromeDriverService service = ChromeDriverService.CreateDefaultService();
+#if !DEBUG
             service.HideCommandPromptWindow = true;
+#endif
+            service.LogPath = "program.log";
 
             ChromeOptions options = new ChromeOptions();
 #if DEBUG
             string path = Path.Combine(Environment.CurrentDirectory, @"..\\..\\..\\chrome-win64\", "chrome.exe");
 #else
-            string path = Path.Combine(Directory.GetCurrentDirectory(), @".\\chrome-win64\", "chrome.exe"); //获取应用程序的当前工作目录
+            string path = Path.Combine(Directory.GetCurrentDirectory(), @".\chrome-win64\", "chrome.exe");
             options.AddArgument("--headless");
 #endif
             options.BinaryLocation = path;
             options.AddArguments("--disable-extensions"); // to disable extension
             options.AddArguments("--disable-notifications"); // to disable notification
             options.AddArguments("--disable-application-cache"); // to disable cache
-            //options.SetLoggingPreference(OpenQA.Selenium.LogType.Server, LogLevel.All);
+            options.SetLoggingPreference(LogType.Driver, LogLevel.All); // Set log level to All for ChromeDriver
+            options.AddArguments("--verbose"); // Enable verbose logging
             options.AddArgument("userAgent=Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:123.0) Gecko/20100101 Firefox/123.0");
 
 
@@ -266,7 +269,7 @@ namespace NZDriverBot
                 List<Slot> availableSlots = new();
                 do
                 {
-                    await Task.Delay(TimeSpan.FromSeconds(10));
+                    await Task.Delay(TimeSpan.FromSeconds(30));
                     checkTimes++;
                     resultTxt.Text = "Please wait, checking for available slots " + checkTimes + (checkTimes > 1 ? " times" : " time") + " for you...";
 
