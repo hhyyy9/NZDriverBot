@@ -10,7 +10,7 @@ namespace NZDriverBot.Models
     {
         public string siteId { get; set; }
         public int capacity { get; set; }
-        public string startDateTime { get; set; }
+        public DateTime startDateTime { get; set; }
         public string endDateTime { get; set; }
         public string displayTime { get; set; }
         public int durationInMins { get; set; }

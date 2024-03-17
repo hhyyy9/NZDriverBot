@@ -16,7 +16,7 @@ namespace NZDriverBot.Models
         public bool isConfirmed { get; set; }
         public int durationInMinutes { get; set; }
         public BookingDetailFee fee { get; set; }
-        public object application { get; set; }
+        public BookingDetailApplication application { get; set; }
         public bool canReschedule { get; set; }
         public bool canCancel { get; set; }
         public string testType { get; set; }
