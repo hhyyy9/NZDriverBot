@@ -69,7 +69,7 @@ namespace NZDriverBot
             string path = Path.Combine(Environment.CurrentDirectory, @"..\\..\\..\\chrome-win64\", "chrome.exe");
 #else
             string path = Path.Combine(Directory.GetCurrentDirectory(), @".\chrome-win64\", "chrome.exe");
-            //options.AddArgument("--headless");
+            options.AddArgument("--headless");
 #endif
             options.BinaryLocation = path;
             options.AddArguments("--disable-extensions"); // to disable extension
@@ -274,6 +274,11 @@ namespace NZDriverBot
                     await Task.Delay(TimeSpan.FromSeconds(30));
                     checkTimes++;
                     resultTxt.Text = "Please wait, checking for available slots " + checkTimes + (checkTimes > 1 ? " times" : " time") + " for you...";
+                    if(checkTimes % 20 == 0)
+                    {
+                        await GetPingAsync();
+                        driver.Navigate().Refresh();
+                    }
 
                     var availableSitesOnDays = await CheckAvailableSiteAsync(bookingFromDatePicker.SelectedDate!.Value.ToString("dd/MM/yyyy"), bookingToDatePicker.SelectedDate!.Value.ToString("dd/MM/yyyy"));
                     foreach (var site in availableSitesOnDays!)
