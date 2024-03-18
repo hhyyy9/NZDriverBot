@@ -61,9 +61,7 @@ namespace NZDriverBot
         private void Setup()
         {
             ChromeDriverService service = ChromeDriverService.CreateDefaultService();
-#if !DEBUG
             service.HideCommandPromptWindow = true;
-#endif
             service.LogPath = "program.log";
 
             ChromeOptions options = new ChromeOptions();
@@ -71,7 +69,7 @@ namespace NZDriverBot
             string path = Path.Combine(Environment.CurrentDirectory, @"..\\..\\..\\chrome-win64\", "chrome.exe");
 #else
             string path = Path.Combine(Directory.GetCurrentDirectory(), @".\chrome-win64\", "chrome.exe");
-            options.AddArgument("--headless");
+            //options.AddArgument("--headless");
 #endif
             options.BinaryLocation = path;
             options.AddArguments("--disable-extensions"); // to disable extension
