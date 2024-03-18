@@ -217,7 +217,7 @@ namespace NZDriverBot
                 //driver.Navigate().GoToUrl("https://online.nzta.govt.nz/licence-test/identification");
                 Console.WriteLine("God is running for " + driver.Title);
 
-                WebDriverWait wait = new WebDriverWait(driver, TimeSpan.FromSeconds(30));
+                WebDriverWait wait = new WebDriverWait(driver, TimeSpan.FromSeconds(10));
 
                 wait.Until(ExpectedConditions.ElementIsVisible(By.XPath("//h1[normalize-space()='Book a practical driver licence test']")));
                 wait.Until(drv => drv.FindElement(By.XPath("//input[@placeholder='e.g. AB123456']"))).SendKeys(licenseNumberTxt.Text);
@@ -529,10 +529,8 @@ namespace NZDriverBot
         {
             using (HttpClient httpClient = new HttpClient())
             {
-                // 创建 HttpRequestMessage 对象
                 var request = new HttpRequestMessage(type, url);
 
-                // 添加自定义的 header
                 request.Headers.Add("Host", "online.nzta.govt.nz");
                 request.Headers.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:123.0) Gecko/20100101 Firefox/123.0");
                 request.Headers.Add("Accept", "application/json, text/plain, */*");
@@ -566,20 +564,16 @@ namespace NZDriverBot
 
                 try
                 {
-                    // 发送请求并等待响应
                     HttpResponseMessage response = await httpClient.SendAsync(request);
 
-                    // 检查响应是否成功
                     if (response.IsSuccessStatusCode)
                     {
-                        // 处理成功的响应
                         string responseBody = await response.Content.ReadAsStringAsync();
                         Console.WriteLine("Response: " + responseBody);
                         return responseBody;
                     }
                     else
                     {
-                        // 处理错误响应
                         Console.WriteLine("Request failed with status code: " + response.StatusCode);
                         MessageBox.Show("Request failed with status code: " + response.StatusCode);
                         button.IsEnabled = true;
@@ -587,7 +581,6 @@ namespace NZDriverBot
                 }
                 catch (Exception ex)
                 {
-                    // 处理异常情况
                     Console.WriteLine("Error: " + ex.Message);
                     MessageBox.Show(ex.Message);
                     button.IsEnabled = true;
@@ -611,10 +604,8 @@ namespace NZDriverBot
             smtpClient.Credentials = new System.Net.NetworkCredential("hhyyy9@gmail.com", "ssbf pbib vktd pqko");
             object userState = new object();
 
-            // 注册邮件发送完成时的事件处理程序
             smtpClient.SendCompleted += (sender, e) =>
             {
-                // 检查是否存在错误
                 if (e.Error != null)
                 {
                     Console.WriteLine("Email sent failed：" + e.Error.Message);
@@ -624,11 +615,9 @@ namespace NZDriverBot
                     Console.WriteLine("Email sent successfully！");
                 }
 
-                // 释放资源
                 smtpClient.Dispose();
             };
 
-            // 异步发送邮件
             smtpClient.SendAsync(message, userState);
 
             return Task.CompletedTask;
