@@ -6,8 +6,10 @@ using OpenQA.Selenium;
 using OpenQA.Selenium.Chrome;
 using OpenQA.Selenium.Support.UI;
 using SeleniumExtras.WaitHelpers;
+using System.Diagnostics.Contracts;
 using System.IO;
 using System.Net.Http;
+using System.Net.Mail;
 using System.Text;
 using System.Windows;
 using System.Windows.Controls;
@@ -218,15 +220,16 @@ namespace NZDriverBot
                 Console.WriteLine("God is running for " + driver.Title);
 
                 WebDriverWait wait = new WebDriverWait(driver, TimeSpan.FromSeconds(30));
+
                 wait.Until(ExpectedConditions.ElementIsVisible(By.XPath("//h1[normalize-space()='Book a practical driver licence test']")));
                 wait.Until(drv => drv.FindElement(By.XPath("//input[@placeholder='e.g. AB123456']"))).SendKeys(licenseNumberTxt.Text);
                 wait.Until(drv => drv.FindElement(By.XPath("//input[@placeholder='e.g. 470']"))).SendKeys(licenseVersionTxt.Text);
                 wait.Until(drv => drv.FindElement(By.XPath("//input[@placeholder='e.g. Smith']"))).SendKeys(nameTxt.Text);
                 wait.Until(drv => drv.FindElement(By.XPath("//input[@placeholder='e.g. 24-03-1981']"))).SendKeys(birthDatePicker.SelectedDate!.Value.ToString("dd-MM-yyyy"));
+
                 var buttonContinue = wait.Until(ExpectedConditions.ElementToBeClickable(By.XPath("//button[@id='btnContinue']")));
                 if (buttonContinue.Displayed)
                     buttonContinue.Click();
-
                 Thread.Sleep(5000);
 
                 IWebElement? errorElement = null;
@@ -250,6 +253,7 @@ namespace NZDriverBot
                     button.IsEnabled = true;
                     return;
                 }
+
 
                 Thread.Sleep(100);
 
@@ -323,10 +327,60 @@ namespace NZDriverBot
         {
             await PostReserveAsync(slot);
             var bookingDetail = await GetBookingByIdAsync();
-            await GetContactAsync();
+            var contract = await GetContactAsync();
             var result = await PostConfirmAsync();
             if (result != null)
             {
+                string emailSubject = "🎉 NZ Driver Bot: Application Reserved Successfully 🎉";
+                string emailBody = $@"
+                        <!DOCTYPE html>
+                        <html lang=""en"">
+                        <head>
+                            <meta charset=""UTF-8"">
+                            <meta name=""viewport"" content=""width=device-width, initial-scale=1.0"">
+                            <title>Your Email Subject</title>
+                            <style>
+                                body {{
+                                    font-family: Arial, sans-serif;
+                                    background-color: #f4f4f4;
+                                    margin: 0;
+                                    padding: 0;
+                                }}
+                                .container {{
+                                    max-width: 600px;
+                                    margin: 20px auto;
+                                    background-color: #fff;
+                                    padding: 20px;
+                                    border-radius: 5px;
+                                    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+                                }}
+                                h1 {{
+                                    color: #333;
+                                }}
+                                p {{
+                                    color: #666;
+                                    line-height: 1.6;
+                                }}
+                            </style>
+                        </head>
+                        <body>
+                            <div class=""container"">
+                                <h1>Congratulations!</h1>
+                                <p>Application {bookingDetail!.id} was reserved successfully!</p>
+                                <p>Test type: {bookingDetail.test}</p>
+                                <p>Site: {bookingDetail.site}</p>
+                                <p>Address: {bookingDetail.address}</p>
+                                <p>Test time: {bookingDetail.date.ToString("yyyy-MM-dd HH:mm:ss")}</p>
+                            </div>
+                        </body>
+                        </html>
+                    ";
+
+
+                // 发送邮件给用户
+                SentEmailAsync(contract.emailAddress, emailSubject, emailBody);
+
+                MessageBox.Show(emailBody);
                 MessageBox.Show($"Congratulations! Application {bookingDetail.id} was reserved successfully!\r\nTest type:{bookingDetail.test}\r\nSite:{bookingDetail.site}\r\nAddress:{bookingDetail.address}\r\nTest time:{bookingDetail.date.ToString("yyyy-MM-dd HH:mm:ss")}");
                 button.IsEnabled = true;
             }
@@ -538,5 +592,44 @@ namespace NZDriverBot
             }
             return null;
         }
+
+        private Task SentEmailAsync(string email, string subject, string body)
+        {
+            MailMessage message = new MailMessage();
+            message.IsBodyHtml = true;
+            message.From = new MailAddress("hhyyy9@gmail.com");
+            message.To.Add(email);
+            message.Subject = subject;
+            message.Body = body;
+
+            SmtpClient smtpClient = new SmtpClient("smtp.gmail.com", 587);
+            smtpClient.UseDefaultCredentials = false;
+            smtpClient.EnableSsl = true;
+            smtpClient.Credentials = new System.Net.NetworkCredential("hhyyy9@gmail.com", "ssbf pbib vktd pqko");
+            object userState = new object();
+
+            // 注册邮件发送完成时的事件处理程序
+            smtpClient.SendCompleted += (sender, e) =>
+            {
+                // 检查是否存在错误
+                if (e.Error != null)
+                {
+                    Console.WriteLine("Email sent failed：" + e.Error.Message);
+                }
+                else
+                {
+                    Console.WriteLine("Email sent successfully！");
+                }
+
+                // 释放资源
+                smtpClient.Dispose();
+            };
+
+            // 异步发送邮件
+            smtpClient.SendAsync(message, userState);
+
+            return Task.CompletedTask;
+        }
+
     }
 }
