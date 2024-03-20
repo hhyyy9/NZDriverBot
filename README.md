@@ -2,7 +2,7 @@
 
 ![NZ Driver Bot Demo](demo.png)
 
-This is a bot designed to automate the process of booking practical driver license tests in New Zealand. The bot is built using C# and utilizes Selenium for web automation.
+This is a bot designed to automate the process of booking practical driver license tests in New Zealand. The bot is built using C# WFP and utilizes Selenium for web automation.
 
 ## Features
 
@@ -46,7 +46,7 @@ The `NZDriverBot.Installer` project is responsible for generating the installer 
 
 ## Contribution
 
-Contributions are welcome! If you find any issues or have suggestions for improvement, please feel free to open an issue or create a pull request.
+Contributions are welcome! If you find any issues or have suggestions for improvement, please feel free to open an issue or contact me: [yu2@me.com](mailto:yu2@me.com).
 
 ## License
 
