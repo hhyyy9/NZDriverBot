@@ -1,15 +1,13 @@
-﻿using AngleSharp.Dom;
-using Newtonsoft.Json;
+﻿using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using NZDriverBot.Common;
 using NZDriverBot.Models;
 using OpenQA.Selenium;
 using OpenQA.Selenium.Chrome;
 using OpenQA.Selenium.Support.UI;
 using SeleniumExtras.WaitHelpers;
-using System.Diagnostics.Contracts;
 using System.IO;
 using System.Net.Http;
-using System.Net.Mail;
 using System.Text;
 using System.Windows;
 using System.Windows.Controls;
@@ -34,6 +32,8 @@ namespace NZDriverBot
         private int checkTimes = 0;
 
         private IWebDriver driver;
+
+        const string BASE_URL = "https://online.nzta.govt.nz/";
 
 
         public MainWindow()
@@ -61,7 +61,9 @@ namespace NZDriverBot
         private void Setup()
         {
             ChromeDriverService service = ChromeDriverService.CreateDefaultService();
+#if !DEBUG
             service.HideCommandPromptWindow = true;
+#endif
             service.LogPath = "program.log";
 
             ChromeOptions options = new ChromeOptions();
@@ -75,10 +77,16 @@ namespace NZDriverBot
             options.AddArguments("--disable-extensions"); // to disable extension
             options.AddArguments("--disable-notifications"); // to disable notification
             options.AddArguments("--disable-application-cache"); // to disable cache
-            options.SetLoggingPreference(LogType.Driver, LogLevel.All); // Set log level to All for ChromeDriver
             options.AddArguments("--verbose"); // Enable verbose logging
             options.AddArgument("userAgent=Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:123.0) Gecko/20100101 Firefox/123.0");
+            options.AddArgument("C:\\driver.log");
+            options.AddArgument("--log-level=ALL");
 
+            options.SetLoggingPreference(LogType.Browser, LogLevel.All);
+            options.SetLoggingPreference(LogType.Client, LogLevel.All);
+            options.SetLoggingPreference(LogType.Driver, LogLevel.All);
+            options.SetLoggingPreference(LogType.Profiler, LogLevel.All);
+            options.SetLoggingPreference(LogType.Server, LogLevel.All);
 
             new DriverManager().SetUpDriver(new ChromeConfig());
 
@@ -271,12 +279,11 @@ namespace NZDriverBot
                 List<Slot> availableSlots = new();
                 do
                 {
-                    await Task.Delay(TimeSpan.FromSeconds(30));
+                    await Task.Delay(TimeSpan.FromSeconds(50));
                     checkTimes++;
                     resultTxt.Text = "Please wait, checking for available slots " + checkTimes + (checkTimes > 1 ? " times" : " time") + " for you...";
-                    if(checkTimes % 20 == 0)
+                    if (checkTimes % 8 == 0)
                     {
-                        await GetPingAsync();
                         driver.Navigate().Refresh();
                     }
 
@@ -321,9 +328,210 @@ namespace NZDriverBot
             }
             catch (Exception ex)
             {
-                MessageBox.Show("Error: " + ex.Message);
+                MessageBox.Show("Login Error: " + ex.Message);
                 button.IsEnabled = true;
             }
+        }
+
+
+        //first fetch authentication api.
+        private async Task<string?> GetAuthenticationAsync()
+        {
+            string url = BASE_URL + "/api/authentication";
+            string? responseContent = await SendHttpRequestAsync(HttpMethod.Get, url, "");
+            Console.WriteLine("authentication=" + responseContent);
+            return responseContent;
+        }
+
+        private async Task<string?> GetEligibilityAsync()
+        {
+            string url = BASE_URL + "/api/licence-test/eligibility";
+            string? responseContent = await SendHttpRequestAsync(HttpMethod.Get, url, "");
+            Console.WriteLine("eligibility=" + responseContent);
+            return responseContent;
+        }
+
+
+        private async Task<List<Booking>> GetBookingsAsync()
+        {
+            string url = BASE_URL + "/api/licence-test/bookings";
+            string? responseContent = await SendHttpRequestAsync(HttpMethod.Get, url, "");
+            Console.WriteLine("bookings=" + responseContent);
+            JObject obj = JObject.Parse(responseContent!);
+            bookings = obj["bookings"].ToObject<List<Booking>>();
+            return bookings!;
+        }
+
+        private async Task<string?> GetDLBookingAsync()
+        {
+            string url = BASE_URL + "/api/managedcontent/DL/DL-Booking";
+            string? responseContent = await SendHttpRequestAsync(HttpMethod.Get, url, "");
+            Console.WriteLine("DLBooking=" + responseContent);
+            return responseContent;
+        }
+
+        private async Task<List<OverseasConversion>?> GetOverseasConversionAsync()
+        {
+            string url = BASE_URL + "/api/licence-test/eligibility/OverseasConversion";
+            string? responseContent = await SendHttpRequestAsync(HttpMethod.Get, url, "");
+            Console.WriteLine("OverseasConversion=" + responseContent);
+            JObject obj = JObject.Parse(responseContent!);
+            outstandingTests = obj["outstandingTests"].ToObject<List<OverseasConversion>>();
+            return outstandingTests;
+        }
+
+        private async Task<string?> GetNewLicenceClassAsync()
+        {
+            string url = BASE_URL + "/api/licence-test/eligibility/NewLicenceClass";
+            string? responseContent = await SendHttpRequestAsync(HttpMethod.Get, url, "");
+            Console.WriteLine("NewLicenceClass=" + responseContent);
+            return responseContent;
+        }
+
+        private async Task<List<SlotAvailability>?> CheckAvailableSiteAsync(string fromDate, string toDate)
+        {
+            string url = BASE_URL + "/api/licence-test/slots/availability/Class1F?siteId=" + selectedSiteId + "&dateFrom=" + fromDate + "&dateTo=" + toDate;
+            string? responseContent = await SendHttpRequestAsync(HttpMethod.Get, url, "");
+            Console.WriteLine("AvailableSite=" + responseContent);
+            JObject obj = JObject.Parse(responseContent!);
+            var list = obj["slotAvailability"].ToObject<List<SlotAvailability>>();
+            return list;
+        }
+
+        private async Task<List<Slot>?> GetSiteListAsync(string siteId, string date)
+        {
+            string url = BASE_URL + "/api/licence-test/slots/Class1F/" + siteId + "?slotDate=" + date;
+            string? responseContent = await SendHttpRequestAsync(HttpMethod.Get, url, "");
+            Console.WriteLine("SiteList=" + responseContent);
+            JObject obj = JObject.Parse(responseContent!);
+            var availableSlots = obj["slots"].ToObject<List<Slot>>();
+            return availableSlots;
+        }
+
+        private async Task<Reserve?> PostReserveAsync(Slot slot)
+        {
+            string url = BASE_URL + "/api/licence-test/bookings/reserve";
+            var bodyObject = new ReserveBody
+            {
+                applicationId = outstandingTests.FirstOrDefault().applicationId.ToString(),
+                applicationType = outstandingTests.FirstOrDefault().applicationType,
+                hasAdvancedDriverCertificate = "false",
+                isReschedule = bookings.Count > 0,
+                licenceClass = outstandingTests.FirstOrDefault().entitlementValue,
+                siteId = slot.siteId,
+                stage = outstandingTests.FirstOrDefault()?.stage ?? "",
+                testType = outstandingTests.FirstOrDefault()?.testType ?? "",
+                when = slot.startDateTime!.ToString("yyyy-MM-ddTHH:mm:ss")
+            };
+            string? responseContent = await SendHttpRequestAsync(HttpMethod.Post, url, JsonConvert.SerializeObject(bodyObject));
+            Console.WriteLine("Reserve=" + responseContent);
+            JObject obj = JObject.Parse(responseContent!);
+            reserve = obj.ToObject<Reserve>();
+            return reserve;
+        }
+
+        private async Task<BookingDetail?> GetBookingByIdAsync()
+        {
+            string url = BASE_URL + "/api/licence-test/bookings/" + reserve.bookingId + "?$expand=$application";//"?$expand=$fee";
+            string? responseContent = await SendHttpRequestAsync(HttpMethod.Get, url, "");
+            Console.WriteLine("BookingById=" + responseContent);
+            JObject obj = JObject.Parse(responseContent!);
+            var bookingDetail = obj["booking"].ToObject<BookingDetail>();
+            return bookingDetail;
+        }
+
+        private async Task<Contact?> GetContactAsync()
+        {
+            string url = BASE_URL + "/api/driver/contact";
+            string? responseContent = await SendHttpRequestAsync(HttpMethod.Get, url, "");
+            Console.WriteLine("GetContact=" + responseContent);
+            JObject obj = JObject.Parse(responseContent!);
+            var contact = obj["driver"].ToObject<Contact>();
+            return contact;
+        }
+
+        private async Task GetPingAsync()
+        {
+            string url = BASE_URL + "/api/authentication/PING";
+            string? responseContent = await SendHttpRequestAsync(HttpMethod.Get, url, "");
+            Console.WriteLine("GetPing=" + responseContent);
+            return;
+        }
+
+        private async Task<string> PostConfirmAsync()
+        {
+            string url = BASE_URL + "/api/licence-test/bookings/reserve/" + reserve.bookingId + "/confirm";
+            string? responseContent = await SendHttpRequestAsync(HttpMethod.Post, url, "");
+            Console.WriteLine("PostConfirm=" + responseContent);
+            JObject obj = JObject.Parse(responseContent!);
+            var result = obj["bookingId"].ToString();
+            return result;
+        }
+
+
+        private async Task<string?> SendHttpRequestAsync(HttpMethod type, string url, string requestBody)
+        {
+
+            using (HttpClient httpClient = new HttpClient())
+            {
+                var request = new HttpRequestMessage(type, url);
+
+                request.Headers.Add("Host", "online.nzta.govt.nz");
+                request.Headers.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:123.0) Gecko/20100101 Firefox/123.0");
+                request.Headers.Add("Accept", "application/json, text/plain, */*");
+                request.Headers.Add("Accept-Language", "en-US,en;q=0.5");
+                request.Headers.Add("Accept-Encoding", "gzip, deflate, br");
+                request.Headers.Add("Referer", url);
+                request.Headers.Add("api-version", "1.0");
+                request.Headers.Add("Cache-Control", "no-cache");
+                request.Headers.Add("Pragma", "no-cache");
+                request.Headers.Add("Connection", "keep-alive");
+                request.Headers.Add("Sec-Fetch-Dest", "empty");
+                request.Headers.Add("Sec-Fetch-Mode", "cors");
+                request.Headers.Add("Sec-Fetch-Site", "same-origin");
+                request.Headers.Add("TE", "trailers");
+                request.Headers.Add("DNT", "1");
+                request.Headers.Add("Sec-GPC", "1");
+
+                var cookies = driver.Manage().Cookies.AllCookies;
+                string cookieString = "";
+                foreach (var cookie in cookies)
+                {
+                    Console.WriteLine(cookie.Name + " : " + cookie.Value);
+                    cookieString += cookie.Name + "=" + cookie.Value + ";";
+                }
+                request.Headers.Add("Cookie", cookieString);
+
+                if (!string.IsNullOrEmpty(requestBody))
+                {
+                    request.Content = new StringContent(requestBody, Encoding.UTF8, "application/json");
+                }
+
+                try
+                {
+                    HttpResponseMessage response = await httpClient.SendAsync(request);
+
+                    if (response.IsSuccessStatusCode)
+                    {
+                        string responseBody = await response.Content.ReadAsStringAsync();
+                        Console.WriteLine("Response: " + responseBody);
+                        return responseBody;
+                    }
+                    else
+                    {
+                        Console.WriteLine("Request failed with status code: " + response.StatusCode);
+                        MessageBox.Show("Request failed with status code: " + response.StatusCode);
+                        button.IsEnabled = true;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine("SendHttpRequestAsync Error: " + ex.Message);
+                    MessageBox.Show(ex.Message);
+                    button.IsEnabled = true;
+                }
+            }
+            return null;
         }
 
         private async Task<string> BookAndConfirm(Slot slot)
@@ -381,247 +589,12 @@ namespace NZDriverBot
 
 
                 // 发送邮件给用户
-                SentEmailAsync(contract.emailAddress, emailSubject, emailBody);
+                EMailHelper.SentEmailAsync(contract.emailAddress, emailSubject, emailBody);
 
-                MessageBox.Show(emailBody);
                 MessageBox.Show($"Congratulations! Application {bookingDetail.id} was reserved successfully!\r\nTest type:{bookingDetail.test}\r\nSite:{bookingDetail.site}\r\nAddress:{bookingDetail.address}\r\nTest time:{bookingDetail.date.ToString("yyyy-MM-dd HH:mm:ss")}");
                 button.IsEnabled = true;
             }
             return result;
         }
-
-        //first fetch authentication api.
-        private async Task<string?> GetAuthenticationAsync()
-        {
-            string url = "https://online.nzta.govt.nz/api/authentication";
-            string? responseContent = await SendHttpRequestAsync(HttpMethod.Get, url, "");
-            Console.WriteLine("authentication=" + responseContent);
-            return responseContent;
-        }
-
-        private async Task<string?> GetEligibilityAsync()
-        {
-            string url = "https://online.nzta.govt.nz/api/licence-test/eligibility";
-            string? responseContent = await SendHttpRequestAsync(HttpMethod.Get, url, "");
-            Console.WriteLine("eligibility=" + responseContent);
-            return responseContent;
-        }
-
-
-        private async Task<List<Booking>> GetBookingsAsync()
-        {
-            string url = "https://online.nzta.govt.nz/api/licence-test/bookings";
-            string? responseContent = await SendHttpRequestAsync(HttpMethod.Get, url, "");
-            Console.WriteLine("bookings=" + responseContent);
-            JObject obj = JObject.Parse(responseContent!);
-            bookings = obj["bookings"].ToObject<List<Booking>>();
-            return bookings!;
-        }
-
-        private async Task<string?> GetDLBookingAsync()
-        {
-            string url = "https://online.nzta.govt.nz/api/managedcontent/DL/DL-Booking";
-            string? responseContent = await SendHttpRequestAsync(HttpMethod.Get, url, "");
-            Console.WriteLine("DLBooking=" + responseContent);
-            return responseContent;
-        }
-
-        private async Task<List<OverseasConversion>?> GetOverseasConversionAsync()
-        {
-            string url = "https://online.nzta.govt.nz/api/licence-test/eligibility/OverseasConversion";
-            string? responseContent = await SendHttpRequestAsync(HttpMethod.Get, url, "");
-            Console.WriteLine("OverseasConversion=" + responseContent);
-            JObject obj = JObject.Parse(responseContent!);
-            outstandingTests = obj["outstandingTests"].ToObject<List<OverseasConversion>>();
-            return outstandingTests;
-        }
-
-        private async Task<string?> GetNewLicenceClassAsync()
-        {
-            string url = "https://online.nzta.govt.nz/api/licence-test/eligibility/NewLicenceClass";
-            string? responseContent = await SendHttpRequestAsync(HttpMethod.Get, url, "");
-            Console.WriteLine("NewLicenceClass=" + responseContent);
-            return responseContent;
-        }
-
-        private async Task<List<SlotAvailability>?> CheckAvailableSiteAsync(string fromDate, string toDate)
-        {
-            string url = "https://online.nzta.govt.nz/api/licence-test/slots/availability/Class1F?siteId=" + selectedSiteId + "&dateFrom=" + fromDate + "&dateTo=" + toDate;
-            string? responseContent = await SendHttpRequestAsync(HttpMethod.Get, url, "");
-            Console.WriteLine("AvailableSite=" + responseContent);
-            JObject obj = JObject.Parse(responseContent!);
-            var list = obj["slotAvailability"].ToObject<List<SlotAvailability>>();
-            return list;
-        }
-
-        private async Task<List<Slot>?> GetSiteListAsync(string siteId, string date)
-        {
-            string url = "https://online.nzta.govt.nz/api/licence-test/slots/Class1F/" + siteId + "?slotDate=" + date;
-            string? responseContent = await SendHttpRequestAsync(HttpMethod.Get, url, "");
-            Console.WriteLine("SiteList=" + responseContent);
-            JObject obj = JObject.Parse(responseContent!);
-            var availableSlots = obj["slots"].ToObject<List<Slot>>();
-            return availableSlots;
-        }
-
-        private async Task<Reserve?> PostReserveAsync(Slot slot)
-        {
-            string url = "https://online.nzta.govt.nz/api/licence-test/bookings/reserve";
-            var bodyObject = new ReserveBody
-            {
-                applicationId = outstandingTests.FirstOrDefault().applicationId.ToString(),
-                applicationType = outstandingTests.FirstOrDefault().applicationType,
-                hasAdvancedDriverCertificate = "false",
-                isReschedule = bookings.Count > 0,
-                licenceClass = outstandingTests.FirstOrDefault().entitlementValue,
-                siteId = slot.siteId,
-                stage = outstandingTests.FirstOrDefault()?.stage ?? "",
-                testType = outstandingTests.FirstOrDefault()?.testType ?? "",
-                when = slot.startDateTime!.ToString("yyyy-MM-ddTHH:mm:ss")
-            };
-            string? responseContent = await SendHttpRequestAsync(HttpMethod.Post, url, JsonConvert.SerializeObject(bodyObject));
-            Console.WriteLine("Reserve=" + responseContent);
-            JObject obj = JObject.Parse(responseContent!);
-            reserve = obj.ToObject<Reserve>();
-            return reserve;
-        }
-
-        private async Task<BookingDetail?> GetBookingByIdAsync()
-        {
-            string url = "https://online.nzta.govt.nz/api/licence-test/bookings/" + reserve.bookingId + "?$expand=$application";//"?$expand=$fee";
-            string? responseContent = await SendHttpRequestAsync(HttpMethod.Get, url, "");
-            Console.WriteLine("BookingById=" + responseContent);
-            JObject obj = JObject.Parse(responseContent!);
-            var bookingDetail = obj["booking"].ToObject<BookingDetail>();
-            return bookingDetail;
-        }
-
-        private async Task<Contact?> GetContactAsync()
-        {
-            string url = "https://online.nzta.govt.nz/api/driver/contact";
-            string? responseContent = await SendHttpRequestAsync(HttpMethod.Get, url, "");
-            Console.WriteLine("GetContact=" + responseContent);
-            JObject obj = JObject.Parse(responseContent!);
-            var contact = obj["driver"].ToObject<Contact>();
-            return contact;
-        }
-
-        private async Task GetPingAsync()
-        {
-            string url = "https://online.nzta.govt.nz/api/authentication/PING";
-            string? responseContent = await SendHttpRequestAsync(HttpMethod.Get, url, "");
-            Console.WriteLine("GetPing=" + responseContent);
-            return;
-        }
-
-        private async Task<string> PostConfirmAsync()
-        {
-            string url = "https://online.nzta.govt.nz/api/licence-test/bookings/reserve/" + reserve.bookingId + "/confirm";
-            string? responseContent = await SendHttpRequestAsync(HttpMethod.Post, url, "");
-            Console.WriteLine("PostConfirm=" + responseContent);
-            JObject obj = JObject.Parse(responseContent!);
-            var result = obj["bookingId"].ToString();
-            return result;
-        }
-
-
-        private async Task<string?> SendHttpRequestAsync(HttpMethod type, string url, string requestBody)
-        {
-            using (HttpClient httpClient = new HttpClient())
-            {
-                var request = new HttpRequestMessage(type, url);
-
-                request.Headers.Add("Host", "online.nzta.govt.nz");
-                request.Headers.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:123.0) Gecko/20100101 Firefox/123.0");
-                request.Headers.Add("Accept", "application/json, text/plain, */*");
-                request.Headers.Add("Accept-Language", "en-US,en;q=0.5");
-                request.Headers.Add("Accept-Encoding", "gzip, deflate, br");
-                request.Headers.Add("Referer", url);
-                request.Headers.Add("api-version", "1.0");
-                request.Headers.Add("Cache-Control", "no-cache");
-                request.Headers.Add("Pragma", "no-cache");
-                request.Headers.Add("Connection", "keep-alive");
-                request.Headers.Add("Sec-Fetch-Dest", "empty");
-                request.Headers.Add("Sec-Fetch-Mode", "cors");
-                request.Headers.Add("Sec-Fetch-Site", "same-origin");
-                request.Headers.Add("TE", "trailers");
-                request.Headers.Add("DNT", "1");
-                request.Headers.Add("Sec-GPC", "1");
-
-                var cookies = driver.Manage().Cookies.AllCookies;
-                string cookieString = "";
-                foreach (var cookie in cookies)
-                {
-                    Console.WriteLine(cookie.Name + " : " + cookie.Value);
-                    cookieString += cookie.Name + "=" + cookie.Value + ";";
-                }
-                request.Headers.Add("Cookie", cookieString);
-
-                if (!string.IsNullOrEmpty(requestBody))
-                {
-                    request.Content = new StringContent(requestBody, Encoding.UTF8, "application/json");
-                }
-
-                try
-                {
-                    HttpResponseMessage response = await httpClient.SendAsync(request);
-
-                    if (response.IsSuccessStatusCode)
-                    {
-                        string responseBody = await response.Content.ReadAsStringAsync();
-                        Console.WriteLine("Response: " + responseBody);
-                        return responseBody;
-                    }
-                    else
-                    {
-                        Console.WriteLine("Request failed with status code: " + response.StatusCode);
-                        MessageBox.Show("Request failed with status code: " + response.StatusCode);
-                        button.IsEnabled = true;
-                    }
-                }
-                catch (Exception ex)
-                {
-                    Console.WriteLine("Error: " + ex.Message);
-                    MessageBox.Show(ex.Message);
-                    button.IsEnabled = true;
-                }
-            }
-            return null;
-        }
-
-        private Task SentEmailAsync(string email, string subject, string body)
-        {
-            MailMessage message = new MailMessage();
-            message.IsBodyHtml = true;
-            message.From = new MailAddress("hhyyy9@gmail.com");
-            message.To.Add(email);
-            message.Subject = subject;
-            message.Body = body;
-
-            SmtpClient smtpClient = new SmtpClient("smtp.gmail.com", 587);
-            smtpClient.UseDefaultCredentials = false;
-            smtpClient.EnableSsl = true;
-            smtpClient.Credentials = new System.Net.NetworkCredential("hhyyy9@gmail.com", "ssbf pbib vktd pqko");
-            object userState = new object();
-
-            smtpClient.SendCompleted += (sender, e) =>
-            {
-                if (e.Error != null)
-                {
-                    Console.WriteLine("Email sent failed：" + e.Error.Message);
-                }
-                else
-                {
-                    Console.WriteLine("Email sent successfully！");
-                }
-
-                smtpClient.Dispose();
-            };
-
-            smtpClient.SendAsync(message, userState);
-
-            return Task.CompletedTask;
-        }
-
     }
 }
