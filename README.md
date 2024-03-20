@@ -11,6 +11,7 @@ This is a bot designed to automate the process of booking practical driver licen
 - **Site and Date Selection**: Users can select their preferred testing site and date through a user-friendly interface.
 - **Error Handling**: The bot provides error messages for missing or invalid input to ensure a smooth user experience.
 - **Headless Browser**: Utilizes headless browsing with Chrome to perform automated tasks in the background.
+- **Email Notification**: Email Notification on Successful Operation.
 
 ## Dependencies
 
