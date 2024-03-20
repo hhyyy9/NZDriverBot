@@ -2,7 +2,7 @@
 
 ![NZ Driver Bot Demo](demo.png)
 
-I saw there is a web version which will cost 18 NZD per week, So I made this.
+I saw there is a web version which will cost 18 NZD per week, that's why I made this.
 This is a bot designed to automate the process of booking practical driver license tests in New Zealand. The bot is built using C# WFP and utilizes Selenium for web automation.
 
 ## Features
